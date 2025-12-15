@@ -19,10 +19,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
   
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+    
+    #root {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
     }
     
     /* Hide YouTube controls and overlay */
@@ -146,7 +154,7 @@
             id: 'alyssa',
             name: 'Alyssa',
             age: 14,
-            videoUrl: 'https://www.youtube.com/shorts/1MWdA2VmyxQ', // Alyssa's celebration video
+            videoUrl: 'https://files.catbox.moe/1unruw.mp4', // Alyssa's celebration video
             questions: [
               {
                 question: "What's Alyssa's favorite hobby?",
@@ -180,7 +188,7 @@
             id: 'briella',
             name: 'Briella',
             age: 11,
-            videoUrl: 'https://www.youtube.com/shorts/heG-TFAS7Iw', // Briella's celebration video
+            videoUrl: 'https://files.catbox.moe/g6f3zd.mp4', // Briella's celebration video
             questions: [
               {
                 question: "What's Briella's favorite activity?",
@@ -213,7 +221,7 @@
             id: 'aj',
             name: 'AJ',
             age: 4,
-            videoUrl: 'https://www.youtube.com/shorts/UJwBYlDOyN4', // AJ's T-Rex riding video
+            videoUrl: 'https://files.catbox.moe/fki84z.mp4', // AJ's T-Rex riding video
             questions: [
               {
                 question: "What Dinosaur is this?",
@@ -256,7 +264,7 @@
             id: 'ava',
             name: 'Ava',
             age: 10,
-            videoUrl: 'https://www.youtube.com/shorts/MO4jGKWIrg8', // Ava's celebration video
+            videoUrl: 'https://files.catbox.moe/05q04a.mp4', // Ava's celebration video
             questions: [
               {
                 question: "What's Ava's favorite school subject?",
@@ -289,7 +297,7 @@
             id: 'harper',
             name: 'Harper',
             age: 8,
-            videoUrl: 'https://www.youtube.com/shorts/TTiprMsGhDc', // Harper's celebration video
+            videoUrl: 'https://files.catbox.moe/65l222.mp4', // Harper's celebration video
             questions: [
               {
                 question: "What's Harper's favorite color?",
@@ -327,7 +335,7 @@
             id: 'thea',
             name: 'Thea',
             age: 6,
-            videoUrl: 'https://www.youtube.com/shorts/25cJFXh-j84', // Thea's celebration video
+            videoUrl: 'https://files.catbox.moe/tgkif2.mp4', // Thea's celebration video
             questions: [
               {
                 question: "What Gymnastics move is this?",
@@ -361,7 +369,7 @@
               },
               {
                 question: "Which season is the coldest?",
-                image: 'https://www.youtube.com/shorts/9PEIilouz3c',
+                image: 'https://files.catbox.moe/3zovqd.mp4',
                 options: ['Summer', 'Winter', 'Banana', 'Fall'],
                 correct: 1
               },
@@ -396,7 +404,7 @@
     };
     
     // ADD YOUR FINAL WATERPARK REVEAL VIDEO URL HERE
-    const FINAL_REVEAL_VIDEO_URL = 'https://youtu.be/hiN-xq0A9LA?t=6';
+    const FINAL_REVEAL_VIDEO_URL = 'https://files.catbox.moe/vnylgt.mp4';
 
     // ============================================================================
     // MAIN QUIZ COMPONENT - YOU CAN LEAVE THIS SECTION AS IS
@@ -623,13 +631,14 @@
               
               {/* Video Container */}
               <div className="w-full max-w-2xl bg-black rounded-2xl overflow-hidden shadow-2xl flex-shrink-0" style={{ maxHeight: '35vh' }}>
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/TqJuWwyoZAA?autoplay=1&mute=1&loop=1&playlist=TqJuWwyoZAA&controls=0&modestbranding=1&showinfo=0&rel=0&playsinline=1"
+                <video
+                  src="https://files.catbox.moe/zwtq7o.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-full"
-                  style={{ aspectRatio: '16/9' }}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
+                  style={{ aspectRatio: '16/9', objectFit: 'cover' }}
                 />
               </div>
               
@@ -940,14 +949,14 @@
               ))}
             </div>
 
-            <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full text-center" style={{ maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-5 w-full text-center flex flex-col" style={{ maxWidth: '85vw', maxHeight: '95vh', overflow: 'hidden' }}>
               {kid.videoUrl ? (
-                <div className="mb-3 flex justify-center">
+                <div className="mb-3 flex justify-center flex-shrink-0">
                   {isYouTubeUrl(kid.videoUrl) ? (
                     <iframe
                       src={getYouTubeEmbedUrl(kid.videoUrl)}
                       className="rounded-xl shadow-lg"
-                      style={{ height: '50vh', aspectRatio: '9/16' }}
+                      style={{ height: '45vh', aspectRatio: '9/16' }}
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
@@ -959,29 +968,29 @@
                       loop
                       muted
                       className="rounded-xl shadow-lg"
-                      style={{ maxHeight: '50vh' }}
+                      style={{ maxHeight: '45vh' }}
                     />
                   )}
                 </div>
               ) : (
-                <div className="mb-3 flex justify-center">
+                <div className="mb-3 flex justify-center flex-shrink-0">
                   <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full p-6 animate-bounce">
                     <Gift className="w-20 h-20 text-white" />
                   </div>
                 </div>
               )}
 
-              <h2 className="text-3xl font-black mb-3 bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+              <h2 className="text-3xl font-black mb-3 bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent flex-shrink-0" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
                 🎊 Congrats {kid.name}! 🎊
               </h2>
 
-              <p className="text-xl font-bold text-gray-700 mb-4">
+              <p className="text-xl font-bold text-gray-700 mb-4 flex-shrink-0">
                 You Did Your Part To Unlock The Gift!
               </p>
 
               <button
                 onClick={handleCelebrationContinue}
-                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xl font-black py-3 px-8 rounded-xl hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all shadow-lg flex items-center gap-2 mx-auto"
+                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xl font-black py-3 px-8 rounded-xl hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all shadow-lg flex items-center gap-2 mx-auto flex-shrink-0"
                 style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
               >
                 Continue <ChevronRight className="w-7 h-7" />
@@ -993,12 +1002,12 @@
 
       if (screen === 'reveal') {
         return (
-          <div className="h-screen overflow-hidden bg-gradient-to-br from-yellow-300 via-orange-400 to-red-500 flex items-center justify-center p-3 relative">
+          <div className="h-screen overflow-hidden bg-gradient-to-br from-yellow-300 via-orange-400 to-red-500 flex items-center justify-center p-2 relative">
             <div className="absolute inset-0 pointer-events-none">
-              {[...Array(100)].map((_, i) => (
+              {[...Array(50)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute text-2xl"
+                  className="absolute text-xl"
                   style={{
                     left: `${Math.random() * 100}%`,
                     top: `-10%`,
@@ -1011,19 +1020,19 @@
               ))}
             </div>
 
-            <div className="relative bg-white rounded-2xl shadow-2xl p-4 w-full text-center" style={{ maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
-              <h1 className="text-4xl font-black mb-3 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+            <div className="relative bg-white rounded-2xl shadow-2xl p-3 w-full text-center flex flex-col" style={{ maxWidth: '85vw', maxHeight: '95vh', overflow: 'hidden' }}>
+              <h1 className="text-3xl font-black mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent flex-shrink-0" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
                 🎉 GIFT UNLOCKED! 🎉
               </h1>
 
-              <div className="bg-gradient-to-r from-cyan-100 to-blue-100 rounded-xl p-4 mb-3">
+              <div className="bg-gradient-to-r from-cyan-100 to-blue-100 rounded-xl p-3 mb-2 flex-shrink-0">
                 {FINAL_REVEAL_VIDEO_URL ? (
-                  <div className="mb-3">
+                  <div className="mb-2">
                     {isYouTubeUrl(FINAL_REVEAL_VIDEO_URL) ? (
                       <iframe
                         src={getYouTubeEmbedUrl(FINAL_REVEAL_VIDEO_URL)}
-                        className="w-full rounded-xl shadow-lg"
-                        style={{ aspectRatio: '16/9', maxHeight: '50vh' }}
+                        className="w-full rounded-xl shadow-lg mx-auto"
+                        style={{ aspectRatio: '16/9', maxHeight: '40vh' }}
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
@@ -1034,31 +1043,31 @@
                         autoPlay
                         loop
                         muted
-                        className="w-full rounded-xl shadow-lg"
-                        style={{ maxHeight: '50vh' }}
+                        className="w-full rounded-xl shadow-lg mx-auto"
+                        style={{ maxHeight: '40vh' }}
                       />
                     )}
                   </div>
                 ) : (
-                  <div className="mb-3">
-                    <div className="bg-gray-200 rounded-xl h-48 flex items-center justify-center text-gray-500 text-lg">
+                  <div className="mb-2">
+                    <div className="bg-gray-200 rounded-xl h-32 flex items-center justify-center text-gray-500 text-base">
                       [Add your waterpark video URL above in FINAL_REVEAL_VIDEO_URL]
                     </div>
                   </div>
                 )}
 
-                <p className="text-2xl font-black text-gray-800 mb-1" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                <p className="text-xl font-black text-gray-800 mb-1" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
                   Uncle Tom's Gift Is...
                 </p>
-                <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
-                  A Day at the Waterpark<br/>With Your Cousins! 🌊
+                <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                  A Day at the Waterpark With Your Cousins! 🌊
                 </p>
               </div>
 
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-2 justify-center flex-shrink-0">
                 <button
                   onClick={() => setScreen('dashboard')}
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xl font-black py-3 px-6 rounded-xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all shadow-lg"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-lg font-black py-2 px-5 rounded-xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all shadow-lg"
                   style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
                 >
                   Back to Dashboard
@@ -1066,7 +1075,7 @@
                 
                 <button
                   onClick={resetProgress}
-                  className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xl font-black py-3 px-6 rounded-xl hover:from-orange-600 hover:to-red-700 transform hover:scale-105 transition-all shadow-lg"
+                  className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-lg font-black py-2 px-5 rounded-xl hover:from-orange-600 hover:to-red-700 transform hover:scale-105 transition-all shadow-lg"
                   style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
                 >
                   Play Again

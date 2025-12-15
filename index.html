@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎁 Mystery Gift Quest</title>
+  
+  <!-- React and ReactDOM from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    /* Hide YouTube controls and overlay */
+    iframe {
+      pointer-events: auto;
+    }
+    
+    /* Prevent YouTube logo and info from showing on hover */
+    .video-container {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Additional YouTube control hiding */
+    .ytp-chrome-top,
+    .ytp-show-cards-title,
+    .ytp-pause-overlay {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    
+    // Lucide React icons as simple components
+    const Gift = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+      </svg>
+    );
+    
+    const Lock = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    );
+    
+    const Unlock = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+      </svg>
+    );
+    
+    const ChevronRight = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    );
+
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    
+    // Convert YouTube URL to embed URL
+    function getYouTubeEmbedUrl(url) {
+      if (!url) return null;
+      
+      // Extract start time if present (?t=6 becomes &start=6)
+      let startTime = '';
+      const timeMatch = url.match(/[?&]t=(\d+)/);
+      if (timeMatch) {
+        startTime = `&start=${timeMatch[1]}`;
+      }
+      
+      // Handle YouTube Shorts
+      const shortsMatch = url.match(/youtube\.com\/shorts\/([^?]+)/);
+      if (shortsMatch) {
+        const videoId = shortsMatch[1];
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&showinfo=0&rel=0&playsinline=1${startTime}`;
+      }
+      
+      // Handle regular YouTube videos
+      const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+      if (videoMatch) {
+        const videoId = videoMatch[1];
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&showinfo=0&rel=0&playsinline=1${startTime}`;
+      }
+      
+      // If it's already an embed URL or direct MP4, return as-is
+      return url;
+    }
+    
+    // Check if URL is a YouTube video
+    function isYouTubeUrl(url) {
+      return url && (url.includes('youtube.com') || url.includes('youtu.be'));
+    }
+    
+    // Sound effects - Replace these URLs with your own sound files!
+    // Upload your sounds to Google Drive, Dropbox, or any file hosting service
+    // Then paste the direct MP3/WAV file URLs below
+    
+    const CORRECT_SOUND_URL = 'https://files.catbox.moe/7f43rz.mp3'; // Correct answer sound
+    const WRONG_SOUND_URL = 'https://files.catbox.moe/kjqhcd.mp3';   // Wrong answer sound
+    
+    // Background Music
+    const DASHBOARD_MUSIC_URL = 'https://files.catbox.moe/so3y4a.mp3'; // Christmas music for dashboard
+    const QUIZ_MUSIC_URL = 'https://files.catbox.moe/wt4fun.mp3'; // Quiz background music (~1 minute, loops)
+    const CELEBRATION_MUSIC_URL = 'https://files.catbox.moe/pqupc7.mp3'; // Celebration music (5 seconds)
+    const REVEAL_MUSIC_URL = 'https://files.catbox.moe/8on4rz.mp3'; // Final reveal music (13 seconds)
+    
+    // Extra Sound Effects
+    const LOCK_UNLOCK_SOUND_URL = 'https://files.catbox.moe/awszoj.mp3'; // Lock unlock sound (7 seconds)
+    const PAGE_TRANSITION_SOUND_URL = ''; // Optional: Whoosh sound between screens
+    
+    const correctSound = CORRECT_SOUND_URL ? new Audio(CORRECT_SOUND_URL) : null;
+    const wrongSound = WRONG_SOUND_URL ? new Audio(WRONG_SOUND_URL) : null;
+    const lockUnlockSound = LOCK_UNLOCK_SOUND_URL ? new Audio(LOCK_UNLOCK_SOUND_URL) : null;
+    
+    // ============================================================================
+    // CUSTOMIZE YOUR QUIZ DATA BELOW
+    // ============================================================================
+    
+    const FAMILIES = {
+      'DIDONATO2025': {
+        name: 'DiDonato Family',
+        kids: [
+          {
+            id: 'alyssa',
+            name: 'Alyssa',
+            age: 14,
+            videoUrl: 'https://www.youtube.com/shorts/1MWdA2VmyxQ', // Alyssa's celebration video
+            questions: [
+              {
+                question: "What's Alyssa's favorite hobby?",
+                image: '', // Optional: add image URL
+                options: ['Reading', 'Dancing', 'Painting', 'Sports'],
+                correct: 0 // Change to the correct answer index (0-3)
+              },
+              {
+                question: "What subject does Alyssa excel at?",
+                options: ['Math', 'Science', 'English', 'History'],
+                correct: 1
+              },
+              {
+                question: "What's Alyssa's dream vacation?",
+                options: ['Beach', 'Mountains', 'City', 'Theme Park'],
+                correct: 2
+              },
+              {
+                question: "What's Alyssa's favorite season?",
+                options: ['Spring', 'Summer', 'Fall', 'Winter'],
+                correct: 1
+              },
+              {
+                question: "What instrument would Alyssa play?",
+                options: ['Guitar', 'Piano', 'Drums', 'Violin'],
+                correct: 1
+              }
+            ]
+          },
+          {
+            id: 'briella',
+            name: 'Briella',
+            age: 11,
+            videoUrl: 'https://www.youtube.com/shorts/heG-TFAS7Iw', // Briella's celebration video
+            questions: [
+              {
+                question: "What's Briella's favorite activity?",
+                options: ['Swimming', 'Drawing', 'Gaming', 'Cooking'],
+                correct: 0
+              },
+              {
+                question: "What's Briella's favorite color?",
+                options: ['Pink', 'Blue', 'Purple', 'Green'],
+                correct: 2
+              },
+              {
+                question: "What animal does Briella love most?",
+                options: ['Dogs', 'Cats', 'Horses', 'Birds'],
+                correct: 2
+              },
+              {
+                question: "What's Briella's favorite food?",
+                options: ['Pizza', 'Pasta', 'Tacos', 'Burgers'],
+                correct: 0
+              },
+              {
+                question: "What sport does Briella enjoy?",
+                options: ['Soccer', 'Basketball', 'Gymnastics', 'Tennis'],
+                correct: 2
+              }
+            ]
+          },
+          {
+            id: 'aj',
+            name: 'AJ',
+            age: 4,
+            videoUrl: 'https://www.youtube.com/shorts/UJwBYlDOyN4', // AJ's T-Rex riding video
+            questions: [
+              {
+                question: "What Dinosaur is this?",
+                image: 'https://i.imgur.com/miVwGSp.png', // Spinosaurus
+                options: ['Velociraptor', 'Ankylosaurus', 'Spinosaurus', 'Dilophosaurus'],
+                correct: 2
+              },
+              {
+                question: "What Dinosaur is this?",
+                image: 'https://i.imgur.com/GdjeKz6.jpeg', // Brontosaurus
+                options: ['Stegosaurus', 'Brontosaurus', 'Diplodocus', 'Apatosaurus'],
+                correct: 1
+              },
+              {
+                question: "What Dinosaur is this?",
+                image: 'https://i.imgur.com/XW0pRhL.png', // Triceratops
+                options: ['Triceratops', 'Styracosaurus', 'Pentaceratops', 'Protoceratops'],
+                correct: 0
+              },
+              {
+                question: "What Dinosaur is this?",
+                image: 'https://i.imgur.com/6KM7ovS.png', // Velociraptor
+                options: ['Deinonychus', 'Utahraptor', 'Microraptor', 'Velociraptor'],
+                correct: 3
+              },
+              {
+                question: "What Dinosaur is this?",
+                image: 'https://i.imgur.com/5NknFT0.png', // T-Rex
+                options: ['Allosaurus', 'Giganotosaurus', 'Tyrannosaurus', 'Carnotaurus'],
+                correct: 2
+              }
+            ]
+          }
+        ]
+      },
+      'DIERKING2025': {
+        name: 'Dierking Family',
+        kids: [
+          {
+            id: 'ava',
+            name: 'Ava',
+            age: 10,
+            videoUrl: 'https://www.youtube.com/shorts/MO4jGKWIrg8', // Ava's celebration video
+            questions: [
+              {
+                question: "What's Ava's favorite school subject?",
+                options: ['Art', 'Science', 'Music', 'PE'],
+                correct: 0
+              },
+              {
+                question: "What does Ava like to do on weekends?",
+                options: ['Read', 'Play outside', 'Watch movies', 'Crafts'],
+                correct: 3
+              },
+              {
+                question: "What's Ava's favorite treat?",
+                options: ['Ice cream', 'Cookies', 'Candy', 'Cake'],
+                correct: 0
+              },
+              {
+                question: "What game does Ava love?",
+                options: ['Board games', 'Video games', 'Card games', 'Outdoor games'],
+                correct: 1
+              },
+              {
+                question: "What's Ava's dream pet?",
+                options: ['Puppy', 'Kitten', 'Bunny', 'Hamster'],
+                correct: 0
+              }
+            ]
+          },
+          {
+            id: 'harper',
+            name: 'Harper',
+            age: 8,
+            videoUrl: 'https://www.youtube.com/shorts/TTiprMsGhDc', // Harper's celebration video
+            questions: [
+              {
+                question: "What's Harper's favorite color?",
+                options: ['Rainbow', 'Pink', 'Blue', 'Yellow'],
+                correct: 0
+              },
+              {
+                question: "What does Harper like to collect?",
+                options: ['Rocks', 'Stickers', 'Toys', 'Books'],
+                correct: 1
+              },
+              {
+                question: "What's Harper's favorite snack?",
+                options: ['Fruit', 'Chips', 'Crackers', 'Popcorn'],
+                correct: 3
+              },
+              {
+                question: "What activity does Harper enjoy most?",
+                options: ['Dancing', 'Singing', 'Drawing', 'Sports'],
+                correct: 0
+              },
+              {
+                question: "What's Harper's bedtime story preference?",
+                options: ['Adventure', 'Fantasy', 'Animals', 'Mystery'],
+                correct: 1
+              }
+            ]
+          }
+        ]
+      },
+      'BAGGS2025': {
+        name: 'Baggs Family',
+        kids: [
+          {
+            id: 'thea',
+            name: 'Thea',
+            age: 6,
+            videoUrl: 'https://www.youtube.com/shorts/25cJFXh-j84', // Thea's celebration video
+            questions: [
+              {
+                question: "What Gymnastics move is this?",
+                image: 'https://i.imgur.com/z3hBq00.gif',
+                options: ['Double Backflip', 'Cartwheel', 'Balance Beam', 'Eating Doritos'],
+                correct: 1
+              },
+              {
+                question: "Help her finish the math problem.",
+                image: 'https://i.imgur.com/FRXqj9f.png',
+                options: ['9', '5', '66', 'apples'],
+                correct: 0
+              },
+              {
+                question: "How many reindeer does Santa have?",
+                image: 'https://i.imgur.com/p75J0gd.gif',
+                options: ['55', 'Potato', '4', '8'],
+                correct: 3
+              },
+              {
+                question: "Help her finish the math problem.",
+                image: 'https://i.imgur.com/VWX1rOV.png',
+                options: ['Turtle', '6', '4', '16'],
+                correct: 2
+              },
+              {
+                question: "What animal is this?",
+                image: 'https://i.imgur.com/MWVTGjq.jpeg',
+                options: ['Parrot', 'Rat', 'Pig', 'Bear'],
+                correct: 3
+              },
+              {
+                question: "Which season is the coldest?",
+                image: 'https://www.youtube.com/shorts/9PEIilouz3c',
+                options: ['Summer', 'Winter', 'Banana', 'Fall'],
+                correct: 1
+              },
+              {
+                question: "Where does Santa Live?",
+                image: 'https://i.imgur.com/tFHG0ch.gif',
+                options: ["Grandma's House", "Macdonald's", "SpongeBob's House", 'North Pole'],
+                correct: 3
+              },
+              {
+                question: "Which animal swims in the Ocean?",
+                image: 'https://i.imgur.com/mORYPd0.gif',
+                options: ['Lama', 'Dolphin', 'Ava', 'Cat'],
+                correct: 1
+              },
+              {
+                question: "Which fruit is sour and yellow?",
+                image: 'https://i.imgur.com/MGPxo2Z.gif',
+                options: ['Lemon', 'Potato', 'Steak', 'Cherry'],
+                correct: 0
+              },
+              {
+                question: "What is the name of the reindeer with a Red, Shiny Nose?",
+                image: 'https://i.imgur.com/OI2LiNp.mp4',
+                options: ['Uncle Tom', 'Donner', 'Rudolph', 'Bob'],
+                correct: 2
+              }
+            ]
+          }
+        ]
+      }
+    };
+    
+    // ADD YOUR FINAL WATERPARK REVEAL VIDEO URL HERE
+    const FINAL_REVEAL_VIDEO_URL = 'https://youtu.be/hiN-xq0A9LA?t=6';
+
+    // ============================================================================
+    // MAIN QUIZ COMPONENT - YOU CAN LEAVE THIS SECTION AS IS
+    // ============================================================================
+
+    function WaterparkQuiz() {
+      const [screen, setScreen] = useState('entry');
+      const [familyCode, setFamilyCode] = useState('');
+      const [currentFamily, setCurrentFamily] = useState(null);
+      const [currentKidIndex, setCurrentKidIndex] = useState(null);
+      const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+      const [progress, setProgress] = useState({});
+      const [selectedAnswer, setSelectedAnswer] = useState(null);
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [codeInput, setCodeInput] = useState('');
+      const [dashboardMusic, setDashboardMusic] = useState(null);
+      const [quizMusic, setQuizMusic] = useState(null);
+      const [celebrationMusic, setCelebrationMusic] = useState(null);
+      const [revealMusic, setRevealMusic] = useState(null);
+      const [justCompletedKid, setJustCompletedKid] = useState(null);
+
+      useEffect(() => {
+        const saved = localStorage.getItem('waterparkQuizProgress');
+        if (saved) {
+          setProgress(JSON.parse(saved));
+        }
+      }, []);
+
+      useEffect(() => {
+        if (Object.keys(progress).length > 0) {
+          localStorage.setItem('waterparkQuizProgress', JSON.stringify(progress));
+        }
+      }, [progress]);
+
+      // Dashboard music control
+      useEffect(() => {
+        if ((screen === 'dashboard' || screen === 'entry') && DASHBOARD_MUSIC_URL) {
+          // Create and play music when entering dashboard or entry screen
+          const music = new Audio(DASHBOARD_MUSIC_URL);
+          music.loop = true;
+          music.volume = 0.3; // Set to 30% volume (adjust as needed)
+          music.play().catch(e => console.log('Music play failed:', e));
+          setDashboardMusic(music);
+
+          // Play unlock sound if we just completed a quiz (only on dashboard)
+          if (screen === 'dashboard' && justCompletedKid && lockUnlockSound) {
+            setTimeout(() => {
+              lockUnlockSound.currentTime = 0;
+              lockUnlockSound.play().catch(e => console.log('Lock unlock sound failed:', e));
+              setJustCompletedKid(null);
+            }, 500);
+          }
+
+          // Cleanup: stop music when leaving dashboard/entry
+          return () => {
+            music.pause();
+            music.currentTime = 0;
+          };
+        } else if (dashboardMusic) {
+          // Stop music if we leave dashboard/entry
+          dashboardMusic.pause();
+          dashboardMusic.currentTime = 0;
+          setDashboardMusic(null);
+        }
+      }, [screen, justCompletedKid]);
+
+      // Quiz music control
+      useEffect(() => {
+        if (screen === 'quiz' && QUIZ_MUSIC_URL) {
+          const music = new Audio(QUIZ_MUSIC_URL);
+          music.loop = true;
+          music.volume = 0.25; // 25% volume - subtle background
+          music.play().catch(e => console.log('Quiz music play failed:', e));
+          setQuizMusic(music);
+
+          return () => {
+            music.pause();
+            music.currentTime = 0;
+          };
+        } else if (quizMusic) {
+          quizMusic.pause();
+          quizMusic.currentTime = 0;
+          setQuizMusic(null);
+        }
+      }, [screen]);
+
+      // Celebration music control
+      useEffect(() => {
+        if (screen === 'celebration' && CELEBRATION_MUSIC_URL) {
+          const music = new Audio(CELEBRATION_MUSIC_URL);
+          music.volume = 0.5; // 50% volume
+          music.play().catch(e => console.log('Celebration music play failed:', e));
+          setCelebrationMusic(music);
+
+          return () => {
+            music.pause();
+            music.currentTime = 0;
+          };
+        } else if (celebrationMusic) {
+          celebrationMusic.pause();
+          celebrationMusic.currentTime = 0;
+          setCelebrationMusic(null);
+        }
+      }, [screen]);
+
+      // Reveal music control
+      useEffect(() => {
+        if (screen === 'reveal' && REVEAL_MUSIC_URL) {
+          const music = new Audio(REVEAL_MUSIC_URL);
+          music.volume = 0.8; // 80% volume - this is the big moment!
+          music.play().catch(e => console.log('Reveal music play failed:', e));
+          setRevealMusic(music);
+
+          return () => {
+            music.pause();
+            music.currentTime = 0;
+          };
+        } else if (revealMusic) {
+          revealMusic.pause();
+          revealMusic.currentTime = 0;
+          setRevealMusic(null);
+        }
+      }, [screen]);
+
+      const handleCodeSubmit = () => {
+        const code = codeInput.toUpperCase();
+        if (FAMILIES[code]) {
+          setFamilyCode(code);
+          setCurrentFamily(FAMILIES[code]);
+          setScreen('dashboard');
+        } else {
+          alert('Invalid code! Please try again.');
+        }
+      };
+
+      const startQuiz = (kidIndex) => {
+        setCurrentKidIndex(kidIndex);
+        setCurrentQuestionIndex(0);
+        setSelectedAnswer(null);
+        setShowFeedback(false);
+        setScreen('quiz');
+      };
+
+      const handleAnswerSelect = (answerIndex) => {
+        if (showFeedback) return;
+        
+        setSelectedAnswer(answerIndex);
+        setShowFeedback(true);
+
+        const kid = currentFamily.kids[currentKidIndex];
+        const question = kid.questions[currentQuestionIndex];
+        const isCorrect = answerIndex === question.correct;
+
+        // Play sound effect
+        if (isCorrect) {
+          if (correctSound) {
+            correctSound.currentTime = 0;
+            correctSound.play().catch(e => console.log('Audio play failed:', e));
+          }
+        } else {
+          if (wrongSound) {
+            wrongSound.currentTime = 0;
+            wrongSound.play().catch(e => console.log('Audio play failed:', e));
+          }
+        }
+
+        if (isCorrect) {
+          setTimeout(() => {
+            if (currentQuestionIndex < kid.questions.length - 1) {
+              setCurrentQuestionIndex(currentQuestionIndex + 1);
+              setSelectedAnswer(null);
+              setShowFeedback(false);
+            } else {
+              const newProgress = { ...progress };
+              if (!newProgress[familyCode]) {
+                newProgress[familyCode] = {};
+              }
+              newProgress[familyCode][kid.id] = true;
+              setProgress(newProgress);
+              
+              // Mark that we just completed this kid's quiz
+              setJustCompletedKid(kid.id);
+              
+              setScreen('celebration');
+            }
+          }, 1500);
+        } else {
+          // Wrong answer - just wait and reset, don't reveal correct answer
+          setTimeout(() => {
+            setSelectedAnswer(null);
+            setShowFeedback(false);
+          }, 1500);
+        }
+      };
+
+      const handleCelebrationContinue = () => {
+        setScreen('dashboard');
+        setCurrentKidIndex(null);
+        setCurrentQuestionIndex(0);
+      };
+
+      const allComplete = currentFamily && currentFamily.kids.every(kid => 
+        progress[familyCode]?.[kid.id]
+      );
+
+      const resetProgress = () => {
+        const newProgress = { ...progress };
+        delete newProgress[familyCode];
+        setProgress(newProgress);
+        setScreen('dashboard');
+      };
+
+      if (screen === 'entry') {
+        return (
+          <div className="h-screen overflow-hidden relative flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600">
+            {/* Background decorative pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]"></div>
+            
+            <div className="relative z-10 w-full h-full max-w-6xl flex flex-col items-center justify-center gap-2">
+              {/* Title */}
+              <h1 className="text-4xl font-black text-white text-center drop-shadow-lg flex-shrink-0" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                🎁 Mystery Gift Quest 🎁
+              </h1>
+              
+              {/* Video Container */}
+              <div className="w-full max-w-2xl bg-black rounded-2xl overflow-hidden shadow-2xl flex-shrink-0" style={{ maxHeight: '35vh' }}>
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/TqJuWwyoZAA?autoplay=1&mute=1&loop=1&playlist=TqJuWwyoZAA&controls=0&modestbranding=1&showinfo=0&rel=0&playsinline=1"
+                  className="w-full h-full"
+                  style={{ aspectRatio: '16/9' }}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+              
+              {/* Code Entry Box */}
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-4 w-full max-w-2xl flex-shrink-0">
+                <p className="text-lg text-gray-700 mb-2 font-semibold text-center">
+                  Uncle Tom has a special surprise waiting for you!
+                </p>
+                
+                <p className="text-xl text-gray-800 mb-3 font-black text-center" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                  Select Your Family:
+                </p>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => {
+                      setFamilyCode('DIDONATO2025');
+                      setCurrentFamily(FAMILIES['DIDONATO2025']);
+                      setScreen('dashboard');
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xl font-black py-3 rounded-xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all shadow-lg"
+                    style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                  >
+                    DiDonato
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setFamilyCode('DIERKING2025');
+                      setCurrentFamily(FAMILIES['DIERKING2025']);
+                      setScreen('dashboard');
+                    }}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xl font-black py-3 rounded-xl hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all shadow-lg"
+                    style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                  >
+                    Dierking
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setFamilyCode('BAGGS2025');
+                      setCurrentFamily(FAMILIES['BAGGS2025']);
+                      setScreen('dashboard');
+                    }}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-black py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all shadow-lg"
+                    style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                  >
+                    Baggs
+                  </button>
+                </div>
+                
+                <p className="text-gray-500 mt-2 text-sm text-center">
+                  Complete all quizzes to unlock your surprise! 🎉
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (screen === 'dashboard') {
+        const completedCount = currentFamily.kids.filter(kid => 
+          progress[familyCode]?.[kid.id]
+        ).length;
+
+        return (
+          <div className="h-screen overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3">
+            <div className="absolute inset-0 opacity-30 pointer-events-none">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==')]"></div>
+            </div>
+            
+            <div className="h-full max-w-7xl mx-auto relative flex flex-col">
+              {/* Back Button */}
+              <div className="mb-2 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setScreen('entry');
+                    setCurrentFamily(null);
+                    setFamilyCode('');
+                  }}
+                  className="bg-white/20 hover:bg-white/30 text-white text-base font-bold py-2 px-4 rounded-xl transition-all shadow-lg flex items-center gap-2"
+                  style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                >
+                  ← Change Family
+                </button>
+              </div>
+              
+              <div className="text-center mb-2 flex-shrink-0">
+                <h2 className="text-3xl font-black text-white mb-1" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                  {currentFamily.name}
+                </h2>
+                <p className="text-xl text-white/90 font-bold">
+                  {completedCount} of {currentFamily.kids.length} Quizzes Complete
+                </p>
+              </div>
+
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 mb-3 shadow-2xl flex-shrink-0">
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-2xl p-4 shadow-2xl transform hover:rotate-3 transition-transform">
+                      <Gift className="w-16 h-16 text-white" />
+                    </div>
+                    
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
+                      {currentFamily.kids.map((kid, index) => {
+                        const isUnlocked = progress[familyCode]?.[kid.id];
+                        const justUnlocked = justCompletedKid === kid.id;
+                        
+                        return (
+                          <div
+                            key={kid.id}
+                            className={`transform transition-all duration-1000 ${
+                              isUnlocked ? 'scale-0 opacity-0' : justUnlocked ? 'animate-unlock' : 'scale-100'
+                            }`}
+                          >
+                            {isUnlocked ? (
+                              <Unlock className="w-8 h-8 text-green-500" />
+                            ) : (
+                              <Lock className="w-8 h-8 text-gray-700 drop-shadow-lg" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {allComplete && (
+                  <div className="text-center mt-6">
+                    <p className="text-2xl font-black text-green-600 mb-3 animate-pulse">
+                      🎉 ALL LOCKS UNLOCKED! 🎉
+                    </p>
+                    <button
+                      onClick={() => setScreen('reveal')}
+                      className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white text-2xl font-black py-3 px-8 rounded-2xl hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 transform hover:scale-110 transition-all shadow-2xl animate-bounce"
+                      style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                    >
+                      🎁 OPEN YOUR PRESENT! 🎁
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 overflow-auto">
+                {currentFamily.kids.map((kid, index) => {
+                  const isComplete = progress[familyCode]?.[kid.id];
+                  
+                  return (
+                    <div
+                      key={kid.id}
+                      className={`bg-white rounded-2xl p-3 shadow-xl transform hover:scale-105 transition-all h-fit ${
+                        isComplete ? 'ring-4 ring-green-500' : ''
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="text-2xl font-black text-gray-800" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                            {kid.name}
+                          </h3>
+                          <p className="text-sm text-gray-600">Age {kid.age}</p>
+                        </div>
+                        {isComplete ? (
+                          <Unlock className="w-7 h-7 text-green-500" />
+                        ) : (
+                          <Lock className="w-7 h-7 text-gray-400" />
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => startQuiz(index)}
+                        className={`w-full text-lg font-black py-2 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 ${
+                          isComplete
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white'
+                        }`}
+                        style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                      >
+                        {isComplete ? '✓ Play Again' : 'Start Quiz'}
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (screen === 'quiz') {
+        const kid = currentFamily.kids[currentKidIndex];
+        const question = kid.questions[currentQuestionIndex];
+        const progress_percent = ((currentQuestionIndex + 1) / kid.questions.length) * 100;
+
+        return (
+          <div className="h-screen overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 p-3">
+            <div className="h-full max-w-6xl mx-auto flex flex-col">
+              <div className="bg-white/30 rounded-full h-3 mb-2 overflow-hidden flex-shrink-0">
+                <div
+                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-full transition-all duration-500 flex items-center justify-end pr-2"
+                  style={{ width: `${progress_percent}%` }}
+                >
+                  <span className="text-white font-bold text-xs">
+                    {currentQuestionIndex + 1}/{kid.questions.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 shadow-2xl flex-1 overflow-auto flex flex-col">
+                <div className="mb-2 flex-shrink-0">
+                  <h3 className="text-lg font-bold text-purple-600 mb-1">
+                    {kid.name}'s Quiz
+                  </h3>
+                  <h2 className="text-2xl font-black text-gray-800" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                    {question.question}
+                  </h2>
+                </div>
+
+                {question.image && (
+                  <div className="mb-3 flex justify-center flex-shrink-0" style={{ maxHeight: '35vh' }}>
+                    {isYouTubeUrl(question.image) ? (
+                      // YouTube video (vertical for Shorts)
+                      <iframe
+                        src={getYouTubeEmbedUrl(question.image)}
+                        className="rounded-xl shadow-lg"
+                        style={{ height: '35vh', aspectRatio: '9/16' }}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    ) : question.image.endsWith('.mp4') ? (
+                      // MP4 video
+                      <video
+                        src={question.image}
+                        autoPlay
+                        loop
+                        muted
+                        className="rounded-xl shadow-lg"
+                        style={{ maxHeight: '35vh' }}
+                      />
+                    ) : (
+                      // Regular image or GIF
+                      <img
+                        src={question.image}
+                        alt="Question"
+                        className="rounded-xl shadow-lg"
+                        style={{ maxHeight: '35vh', maxWidth: '100%', objectFit: 'contain' }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-shrink-0">
+                  {question.options.map((option, index) => {
+                    const isSelected = selectedAnswer === index;
+                    const isCorrect = index === question.correct;
+                    const showAsCorrect = showFeedback && isSelected && isCorrect;
+                    const showAsWrong = showFeedback && isSelected && !isCorrect;
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index)}
+                        disabled={showFeedback}
+                        className={`text-xl font-bold py-3 px-3 rounded-xl transition-all transform hover:scale-105 shadow-lg ${
+                          showAsCorrect
+                            ? 'bg-green-500 text-white ring-4 ring-green-300'
+                            : showAsWrong
+                            ? 'bg-red-500 text-white ring-4 ring-red-300'
+                            : isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gradient-to-br from-purple-100 to-pink-100 text-gray-800 hover:from-purple-200 hover:to-pink-200'
+                        }`}
+                        style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                      >
+                        {String.fromCharCode(65 + index)}. {option}
+                        {showAsCorrect && ' ✓'}
+                        {showAsWrong && ' ✗'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (screen === 'celebration') {
+        const kid = currentFamily.kids[currentKidIndex];
+
+        return (
+          <div className="h-screen overflow-hidden bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 flex items-center justify-center p-3">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(50)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute text-2xl"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animation: `float ${2 + Math.random() * 3}s ease-in-out infinite`,
+                    animationDelay: `${Math.random() * 2}s`
+                  }}
+                >
+                  🎉
+                </div>
+              ))}
+            </div>
+
+            <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full text-center" style={{ maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
+              {kid.videoUrl ? (
+                <div className="mb-3 flex justify-center">
+                  {isYouTubeUrl(kid.videoUrl) ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(kid.videoUrl)}
+                      className="rounded-xl shadow-lg"
+                      style={{ height: '50vh', aspectRatio: '9/16' }}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={kid.videoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      className="rounded-xl shadow-lg"
+                      style={{ maxHeight: '50vh' }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="mb-3 flex justify-center">
+                  <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full p-6 animate-bounce">
+                    <Gift className="w-20 h-20 text-white" />
+                  </div>
+                </div>
+              )}
+
+              <h2 className="text-3xl font-black mb-3 bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                🎊 Congrats {kid.name}! 🎊
+              </h2>
+
+              <p className="text-xl font-bold text-gray-700 mb-4">
+                You Did Your Part To Unlock The Gift!
+              </p>
+
+              <button
+                onClick={handleCelebrationContinue}
+                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xl font-black py-3 px-8 rounded-xl hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all shadow-lg flex items-center gap-2 mx-auto"
+                style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+              >
+                Continue <ChevronRight className="w-7 h-7" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      if (screen === 'reveal') {
+        return (
+          <div className="h-screen overflow-hidden bg-gradient-to-br from-yellow-300 via-orange-400 to-red-500 flex items-center justify-center p-3 relative">
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(100)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute text-2xl"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `-10%`,
+                    animation: `fall ${3 + Math.random() * 3}s linear infinite`,
+                    animationDelay: `${Math.random() * 3}s`
+                  }}
+                >
+                  {['🎉', '🎊', '🎈', '⭐', '✨', '🎁'][Math.floor(Math.random() * 6)]}
+                </div>
+              ))}
+            </div>
+
+            <div className="relative bg-white rounded-2xl shadow-2xl p-4 w-full text-center" style={{ maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
+              <h1 className="text-4xl font-black mb-3 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                🎉 GIFT UNLOCKED! 🎉
+              </h1>
+
+              <div className="bg-gradient-to-r from-cyan-100 to-blue-100 rounded-xl p-4 mb-3">
+                {FINAL_REVEAL_VIDEO_URL ? (
+                  <div className="mb-3">
+                    {isYouTubeUrl(FINAL_REVEAL_VIDEO_URL) ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(FINAL_REVEAL_VIDEO_URL)}
+                        className="w-full rounded-xl shadow-lg"
+                        style={{ aspectRatio: '16/9', maxHeight: '50vh' }}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={FINAL_REVEAL_VIDEO_URL}
+                        autoPlay
+                        loop
+                        muted
+                        className="w-full rounded-xl shadow-lg"
+                        style={{ maxHeight: '50vh' }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <div className="bg-gray-200 rounded-xl h-48 flex items-center justify-center text-gray-500 text-lg">
+                      [Add your waterpark video URL above in FINAL_REVEAL_VIDEO_URL]
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-2xl font-black text-gray-800 mb-1" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                  Uncle Tom's Gift Is...
+                </p>
+                <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent" style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}>
+                  A Day at the Waterpark<br/>With Your Cousins! 🌊
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setScreen('dashboard')}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xl font-black py-3 px-6 rounded-xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all shadow-lg"
+                  style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                >
+                  Back to Dashboard
+                </button>
+                
+                <button
+                  onClick={resetProgress}
+                  className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xl font-black py-3 px-6 rounded-xl hover:from-orange-600 hover:to-red-700 transform hover:scale-105 transition-all shadow-lg"
+                  style={{ fontFamily: '"Fredoka", "Comic Sans MS", cursive' }}
+                >
+                  Play Again
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return null;
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+      @keyframes fall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+      }
+      @keyframes unlock {
+        0% { transform: scale(1) rotate(0deg); }
+        15% { transform: scale(1.3) rotate(-10deg); }
+        30% { transform: scale(1.3) rotate(10deg); }
+        45% { transform: scale(1.3) rotate(-10deg); }
+        60% { transform: scale(1.3) rotate(10deg); }
+        75% { transform: scale(1.5) rotate(0deg); }
+        85% { transform: scale(1.5) rotate(0deg); opacity: 1; }
+        100% { transform: scale(0) rotate(360deg); opacity: 0; }
+      }
+      .animate-unlock {
+        animation: unlock 1.5s ease-in-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<WaterparkQuiz />);
+  </script>
+</body>
+</html>

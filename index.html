@@ -38,6 +38,11 @@
       pointer-events: auto;
     }
     
+    /* Video loading optimization */
+    video {
+      background-color: #1f2937;
+    }
+    
     /* Prevent YouTube logo and info from showing on hover */
     .video-container {
       position: relative;
@@ -649,7 +654,7 @@
               </h1>
               
               {/* Video Container */}
-              <div className="w-full max-w-2xl flex-shrink-0 flex items-center justify-center" style={{ maxHeight: '35vh' }}>
+              <div className="w-full max-w-2xl flex-shrink-0 flex items-center justify-center bg-gray-900 rounded-2xl" style={{ maxHeight: '35vh' }}>
                 <video
                   src="https://files.catbox.moe/zwtq7o.mp4"
                   autoPlay
@@ -658,7 +663,9 @@
                   playsInline
                   preload="auto"
                   className="rounded-2xl shadow-2xl"
-                  style={{ maxWidth: '100%', maxHeight: '35vh', width: 'auto', height: 'auto' }}
+                  style={{ maxWidth: '100%', maxHeight: '35vh', width: 'auto', height: 'auto', backgroundColor: '#1f2937' }}
+                  onCanPlay={(e) => e.target.play()}
+                  onLoadedData={(e) => e.target.play()}
                 />
               </div>
               
@@ -899,7 +906,9 @@
                         playsInline
                         preload="auto"
                         className="rounded-xl shadow-lg"
-                        style={{ maxHeight: '35vh' }}
+                        style={{ maxHeight: '35vh', backgroundColor: '#1f2937' }}
+                        onCanPlay={(e) => e.target.play()}
+                        onLoadedData={(e) => e.target.play()}
                       />
                     ) : (
                       // Regular image or GIF
@@ -992,7 +1001,9 @@
                       playsInline
                       preload="auto"
                       className="rounded-xl shadow-lg"
-                      style={{ maxHeight: '45vh' }}
+                      style={{ maxHeight: '45vh', backgroundColor: '#1f2937' }}
+                      onCanPlay={(e) => e.target.play()}
+                      onLoadedData={(e) => e.target.play()}
                     />
                   )}
                 </div>
@@ -1070,7 +1081,9 @@
                         playsInline
                         preload="auto"
                         className="w-full rounded-xl shadow-lg mx-auto"
-                        style={{ maxHeight: '40vh' }}
+                        style={{ maxHeight: '40vh', backgroundColor: '#1f2937' }}
+                        onCanPlay={(e) => e.target.play()}
+                        onLoadedData={(e) => e.target.play()}
                       />
                     )}
                   </div>

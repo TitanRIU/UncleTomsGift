@@ -463,6 +463,16 @@
         }
       }, [progress]);
 
+      // Preload entry screen video on initial load
+      useEffect(() => {
+        const video = document.createElement('video');
+        video.src = 'https://files.catbox.moe/zwtq7o.mp4';
+        video.preload = 'auto';
+        video.muted = true;
+        video.style.display = 'none';
+        document.body.appendChild(video);
+      }, []);
+
       // Dashboard music control
       useEffect(() => {
         if ((screen === 'dashboard' || screen === 'entry') && DASHBOARD_MUSIC_URL) {
@@ -633,6 +643,76 @@
       const allComplete = currentFamily && currentFamily.kids.every(kid => 
         progress[familyCode]?.[kid.id]
       );
+
+      // Preload final reveal video when all complete
+      useEffect(() => {
+        if (allComplete && FINAL_REVEAL_VIDEO_URL) {
+          const video = document.createElement('video');
+          video.src = FINAL_REVEAL_VIDEO_URL;
+          video.preload = 'auto';
+          video.muted = true;
+          video.style.display = 'none';
+          document.body.appendChild(video);
+        }
+      }, [allComplete]);
+
+      // Preload first question media when on dashboard
+      useEffect(() => {
+        if (screen === 'dashboard' && currentFamily) {
+          currentFamily.kids.forEach(kid => {
+            const isComplete = progress[familyCode]?.[kid.id];
+            if (!isComplete && kid.questions[0]?.image) {
+              const firstQuestion = kid.questions[0];
+              if (firstQuestion.image.endsWith('.mp4')) {
+                const video = document.createElement('video');
+                video.src = firstQuestion.image;
+                video.preload = 'auto';
+                video.muted = true;
+                video.style.display = 'none';
+                document.body.appendChild(video);
+              } else {
+                const img = new Image();
+                img.src = firstQuestion.image;
+              }
+            }
+          });
+        }
+      }, [screen, currentFamily, familyCode, progress]);
+
+      // Preload next question's media when in quiz
+      useEffect(() => {
+        if (screen === 'quiz' && currentFamily) {
+          const kid = currentFamily.kids[currentKidIndex];
+          const nextQuestionIndex = currentQuestionIndex + 1;
+          
+          if (nextQuestionIndex < kid.questions.length) {
+            const nextQuestion = kid.questions[nextQuestionIndex];
+            if (nextQuestion.image) {
+              if (nextQuestion.image.endsWith('.mp4')) {
+                const video = document.createElement('video');
+                video.src = nextQuestion.image;
+                video.preload = 'auto';
+                video.muted = true;
+                video.style.display = 'none';
+                document.body.appendChild(video);
+              } else {
+                const img = new Image();
+                img.src = nextQuestion.image;
+              }
+            }
+          } else {
+            // On last question, preload celebration video
+            if (kid.videoUrl) {
+              const video = document.createElement('video');
+              video.src = kid.videoUrl;
+              video.preload = 'auto';
+              video.muted = true;
+              video.style.display = 'none';
+              document.body.appendChild(video);
+            }
+          }
+        }
+      }, [screen, currentFamily, currentKidIndex, currentQuestionIndex]);
 
       const resetProgress = () => {
         const newProgress = { ...progress };
